@@ -8,10 +8,10 @@ import SecurityIcon from '@mui/icons-material/Security'
 import CancelIcon from '@mui/icons-material/Cancel'
 import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button'
-import { get2FA_QRCodeAPI } from '~/apis'
+import { get2FA_QRCodeAPI, setup_2FA_API } from '~/apis'
 
 // Tài liệu về Material Modal rất dễ ở đây: https://mui.com/material-ui/react-modal/
-function Setup2FA({ isOpen, toggleOpen, user }) {
+function Setup2FA({ isOpen, toggleOpen, user, updateSuccessSetup2FA }) {
   const [otpToken, setConfirmOtpToken] = useState('')
   const [error, setError] = useState(null)
   const [qrCodeImageUrl, setQrCodeImageUrl] = useState(null)
@@ -29,6 +29,12 @@ function Setup2FA({ isOpen, toggleOpen, user }) {
     }
     console.log('handleConfirmSetup2FA > otpToken: ', otpToken)
     // Call API here
+    setup_2FA_API(user._id, otpToken).then(updatedUser => {
+      //
+      updateSuccessSetup2FA(updatedUser)
+      toast.success('2FA has been successfully enabled for your account.')
+      setError(null)
+    })
   }
   useEffect(() => {
     if (isOpen) {
@@ -107,13 +113,6 @@ function Setup2FA({ isOpen, toggleOpen, user }) {
             </Button>
           </Box>
 
-          <Box>
-            <Typography variant="span" sx={{ fontWeight: 'bold', fontSize: '0.9em', color: '#8395a7', '&:hover': { color: '#fdba26' } }}>
-              <a style={{ color: 'inherit', textDecoration: 'none' }} href='https://youtube.com/@trungquandev' target='_blank' rel='noreferrer'>
-                TrungQuanDev - Một Lập Trình Viên
-              </a>
-            </Typography>
-          </Box>
         </Box>
       </Box>
     </Modal>

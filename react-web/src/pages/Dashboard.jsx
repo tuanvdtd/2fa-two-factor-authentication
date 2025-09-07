@@ -34,6 +34,11 @@ function Dashboard() {
     // Điều hướng tới trang Login khi Logout thành công
     navigate('/login')
   }
+  const updateSuccessSetup2FA = (updatedUser) => {
+    setUser(updatedUser)
+    localStorage.setItem('userInfo', JSON.stringify(updatedUser))
+    setOpenSetup2FA(false)
+  }
 
   if (!user) {
     return (
@@ -66,12 +71,12 @@ function Dashboard() {
         isOpen={openSetup2FA}
         toggleOpen={setOpenSetup2FA}
         user={user}
+        updateSuccessSetup2FA={updateSuccessSetup2FA}
       />
 
       {/* Modal yêu cầu xác thực 2FA */}
       {/* Với điều kiện user đã bật tính năng 2FA, và user chưa xác thực 2FA ngay sau khi đăng nhập ở lần tiếp theo */}
-      {/* <Require2FA /> */}
-      {/* {user.require_2fa && !user.is_2fa_verified && <Require2FA />} */}
+      {user.require_2fa && !user.is_2fa_verified && <Require2FA />}
 
       <Box>
         <a style={{ color: 'inherit', textDecoration: 'none' }} href='https://github.com/tuanvdtd' target='_blank' rel='noreferrer'>

@@ -16,5 +16,8 @@ Router.route('/:id')
 Router.route('/:id/get_2fa_qr_code')
   .get(userController.get2FA_QRCode)
 
+Router.route('/:id/setup_2fa')
+  .post(userController.setup2FA)
+
 
 export const userRoute = Router

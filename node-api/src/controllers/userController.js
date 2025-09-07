@@ -7,6 +7,8 @@ import qrcode from 'qrcode'
 const Datastore = require('nedb-promises')
 const UserDB = Datastore.create('src/database/users.json')
 const twoFactorSecretKeyDB = Datastore.create('src/database/2fa_secret_keys.json')
+const userSessionDB = Datastore.create('src/database/user_sessions.json')
+
 const serviceName = '2FA-Demo (Dev)'
 
 const login = async (req, res) => {
@@ -90,9 +92,68 @@ const get2FA_QRCode = async (req, res) => {
   }
 }
 
+const setup2FA = async (req, res) => {
+  try {
+    const user = await UserDB.findOne({ _id: req.params.id })
+    if (!user) {
+      res.status(StatusCodes.NOT_FOUND).json({ message: 'User not found!' })
+      return
+    }
+
+    // Biến lưu trữ 2fa secret key của user trong Database > 2fa_secret_keys tại đây
+    const twoFactorSecretKey = await twoFactorSecretKeyDB.findOne({ user_id: user._id })
+    if (!twoFactorSecretKey) {
+      res.status(StatusCodes.NOT_FOUND).json({ message: '2FA secret key not found!' })
+      return
+    }
+    const twoFactorSecretKeyValue = twoFactorSecretKey.value
+    const otpTokenFromClient = req.body.otpToken
+    if (!otpTokenFromClient) {
+      res.status(StatusCodes.NOT_ACCEPTABLE).json({ message: 'OTP token is required!' })
+      return
+    }
+
+    // Xác thực OTP token từ phía client gửi lên
+    const isValid = authenticator.verify({ token: otpTokenFromClient, secret: twoFactorSecretKeyValue })
+    if (!isValid) {
+      res.status(StatusCodes.NOT_ACCEPTABLE).json({ message: 'Invalid OTP token!' })
+      return
+    }
+
+    // Cập nhật trạng thái đã bật 2FA cho user trong Database > users tại đây
+    const updatedUser = await UserDB.update(
+      { _id: user._id },
+      { $set: { require_2fa: true } },
+      { returnUpdatedDocs: true }
+    )
+    UserDB.compactDatafileAsync() // Giải phóng dung lượng file database
+
+    const newUserSession = await userSessionDB.insert(
+      {
+        user_id: user._id,
+        device_id: `${req.headers['user-agent']}-${new Date().valueOf()}`, // device_id tạm thời lấy user-agent + timestamp để tạm đại diện cho một thiết bị
+        is_2fa_verified: true,
+        last_login: new Date().valueOf()
+      }
+    ) // Tạo phiên đã xác thực 2FA cho user trong Database > user_sessions tại đây
+
+    // Trả về thông tin user đã được cập nhật
+    res.status(StatusCodes.OK).json(
+      {
+        ...pickUser(updatedUser),
+        is_2fa_verified: newUserSession.is_2fa_verified,
+        last_login: newUserSession.last_login
+      })
+
+  } catch (error) {
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(error)
+  }
+}
+
 export const userController = {
   login,
   getUser,
   logout,
-  get2FA_QRCode
+  get2FA_QRCode,
+  setup2FA
 }
