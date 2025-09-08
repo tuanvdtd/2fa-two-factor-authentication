@@ -34,7 +34,7 @@ function Login() {
       minHeight: '100vh',
       alignItems: 'center',
       justifyContent: 'flex-start',
-      background: 'url("src/assets/trungquandev-bg-img.jpg")',
+      background: 'url("src/assets/bg-Login.JPG")',
       backgroundRepeat: 'no-repeat',
       backgroundSize: 'cover',
       backgroundPosition: 'center',
